@@ -32,7 +32,7 @@ public class FailSearchEngine {
                 if (!fallibleWithInners.getInnerFallible(position - 1).isFailed()) {
                     return fallibleWithInners.getInnerFallible(position);
                 } else {
-                    right = position - 1;
+                    right = position ;
                 }
             } else {
                 left = position + 1;
