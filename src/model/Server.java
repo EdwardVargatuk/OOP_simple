@@ -7,13 +7,26 @@ import java.util.*;
  *
  * @author Edward
  */
-public class Server {
+public class Server implements FallibleWithInners {
 
     private static final int MAX_NUMBER_OF_NODES = 15;
 
-    private int number;
+    private final int number;
     private List<Node> nodes;
+    private boolean failed;
 
+    private void setFailed() {
+        this.failed = true;
+    }
+
+    @Override
+    public int getNumber() {
+        return number;
+    }
+
+    List<Node> getNodes() {
+        return nodes;
+    }
     /**
      * create and fill list of nodes
      *
@@ -28,29 +41,56 @@ public class Server {
      * generate list of Nodes of random size from 1 to MAX_NUMBER_OF_NODES
      */
     private void fillListOfNodes() {
-        nodes = new LinkedList<>();
+        nodes = new ArrayList<>();
         Random random = new Random();
-        int numOfNodes = random.nextInt(Server.MAX_NUMBER_OF_NODES) + 1;
+        int numOfNodes = random.nextInt(Server.MAX_NUMBER_OF_NODES - 1) + 1;
         for (int i = 0; i < numOfNodes; i++) {
-            Node node = new Node(i + 1, false);
+            Node node = new Node(i + 1);
             nodes.add(node);
         }
     }
 
-    public int getNumber() {
-        return number;
+     @Override
+    public String toString() {
+        return "\n" + "Server{" +
+                "number=" + number +
+                ", nodes=" + nodes +
+                '}';
     }
 
-    public void setNumber(int number) {
-        this.number = number;
+    @Override
+    public boolean isFailed() {
+        return failed;
     }
 
-    public List<Node> getNodes() {
-        return nodes;
+    @Override
+    public FallibleWithInners getInnerFallible(int number) {
+        return getNodes().get(number);
     }
 
-    public void setNodes(List<Node> nodes) {
-        this.nodes = nodes;
+    @Override
+    public int getSize() {
+        return getNodes().size();
+    }
+
+    /**
+     * fail node and all that goes after
+     *
+     * @param randomNode in nodes
+     */
+    void failNode(Node randomNode) {
+        setFailed();
+        for (int j = getNodes().indexOf(randomNode); j < this.getSize(); j++) {
+            getNodes().get(j).setFailed();
+        }
+    }
+
+    /**
+     * fail all nodes in the server
+     */
+    void failAllNodes() {
+        setFailed();
+        getNodes().forEach(Node::setFailed);
     }
 
     @Override
@@ -59,19 +99,12 @@ public class Server {
         if (!(o instanceof Server)) return false;
         Server server = (Server) o;
         return getNumber() == server.getNumber() &&
-                getNodes().equals(server.getNodes());
+                isFailed() == server.isFailed() &&
+                Objects.equals(getNodes(), server.getNodes());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getNumber(), getNodes());
-    }
-
-    @Override
-    public String toString() {
-        return "\n" + "Server{" +
-                "number=" + number +
-                ", nodes=" + nodes +
-                '}';
+        return Objects.hash(getNumber(), getNodes(), isFailed());
     }
 }

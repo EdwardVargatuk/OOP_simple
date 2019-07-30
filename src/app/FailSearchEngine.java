@@ -1,120 +1,87 @@
 package app;
 
-import model.Cluster;
-import model.Node;
-import model.Server;
+import exeptions.NotFoundFailedElements;
+import model.FallibleWithInners;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
- * I divided the search into the search for the first fail node and first server with this node
- * <p>
  * 21.07.2019 10:27
  *
  * @author Edward
  */
 public class FailSearchEngine {
 
-    private Cluster cluster = new Cluster();
-
-    public Cluster getCluster() {
-        return cluster;
-    }
-
-    public void setCluster(Cluster cluster) {
-        this.cluster = cluster;
-    }
 
     /**
+     * check current and previous element
      *
-     * @param cluster for it's method
-     * @param server which contains fail node
-     * @return number of fail node
+     * @param fallibleWithInners see fallibleWithInners {@link #getFailedElements(FallibleWithInners)}
+     * @return fallibleWithInners at position if found and null if not
      */
-    private int findFailedNode(Cluster cluster, Server server) {
-        List<Node> nodes = server.getNodes();
-        if (nodes.size() == 1 || cluster.isFailed(server.getNumber(), nodes.get(0).getNumber())) {
-            return 1;
+    private FallibleWithInners findFail(FallibleWithInners fallibleWithInners) {
+        if (fallibleWithInners.getSize() == 1 || (fallibleWithInners.getInnerFallible(0).isFailed() && fallibleWithInners.getNumber() != 0)) {
+            return fallibleWithInners.getInnerFallible(0);
         }
-        int result = 0;
         int left = 0;
-        int right = nodes.size();
+        int right = fallibleWithInners.getSize();
         int position = (left + right) / 2;
-        while (position != 0 && position < nodes.size()) {
-            if (cluster.isFailed(server.getNumber(), nodes.get(position).getNumber())) {
-                if (!cluster.isFailed(server.getNumber(), nodes.get(position - 1).getNumber())) {
-                    return nodes.get(position).getNumber();
+        while (position != 0 && position < fallibleWithInners.getSize()) {
+            if (fallibleWithInners.getInnerFallible(position).isFailed()) {
+                if (!fallibleWithInners.getInnerFallible(position - 1).isFailed()) {
+                    return fallibleWithInners.getInnerFallible(position);
                 } else {
                     right = position - 1;
                 }
             } else {
                 left = position + 1;
             }
-            result = nodes.get(position).getNumber();
             position = (left + right) / 2;
+            if (position == 0 && fallibleWithInners.getInnerFallible(position).isFailed()) {
+                return fallibleWithInners.getInnerFallible(position);
+            }
         }
-        return result;
+        return null;
     }
 
     /**
-     * @param servers of cluster
-     * @return fail server
+     * find all nested failed element until element not have children
+     *
+     * @param fallibleWithInners see {@link #findFailedElements(FallibleWithInners)}
+     * @return list of all found failed elements
      */
-    private Server findServerWithFailedNode(List<Server> servers) {
-        if (servers.size() == 1 || servers.get(0).getNodes().get(servers.get(0).getNodes().size() - 1).isFail()) {
-            return servers.get(0);
-        }
-        Server server = null;
-        int left = 0;
-        int right = servers.size();
-        int position = (left + right) / 2;
-        while (position != 0 && position < servers.size()) {
-            List<Node> currentServerNodes = servers.get(position).getNodes();
-            List<Node> previousServerNodes = servers.get(position - 1).getNodes();
-            if (currentServerNodes.get(currentServerNodes.size() - 1).isFail()) {
-                if (!previousServerNodes.get(previousServerNodes.size() - 1).isFail()) {
-                    return servers.get(position);
-                } else {
-                    right = position - 1;
-                }
-            } else {
-                left = position + 1;
+    private List<FallibleWithInners> getFailedElements(FallibleWithInners fallibleWithInners) {
+        List<FallibleWithInners> fallibleWithInnersList = new ArrayList<>();
+        while ((fallibleWithInners != null ? fallibleWithInners.getSize() : 0) > 0) {
+            fallibleWithInners = findFail(fallibleWithInners);
+            if (fallibleWithInners != null) {
+                fallibleWithInnersList.add(fallibleWithInners);
             }
-            server = servers.get(position);
-            position = (left + right) / 2;
         }
-        return server;
+
+        return fallibleWithInnersList;
     }
 
 
     /**
-     * @param cluster on which to search
-     * @return result string
+     * make result according to search data
+     *
+     * @param fallibleWithInners element that implement {@link FallibleWithInners}
+     * @return result of search in string
+     * @throws NotFoundFailedElements if result list is empty
      */
-    private String search(Cluster cluster) {
-        String result = "";
-        List<Server> servers = cluster.getServers();
-        Server serverWithFailedNode = findServerWithFailedNode(servers);
-        if (serverWithFailedNode != null) {
-            int numberOfFailedNode = findFailedNode(cluster, serverWithFailedNode);
-            if (numberOfFailedNode != 0) {
-                result = "Server with number " + serverWithFailedNode.getNumber() + " has fail node with number " + numberOfFailedNode;
-            }
+    public String findFailedElements(FallibleWithInners fallibleWithInners) throws NotFoundFailedElements {
+        List<FallibleWithInners> failedElements = getFailedElements(fallibleWithInners);
+        StringBuilder result = new StringBuilder();
+        if (failedElements.size() > 0) {
+            failedElements.forEach(failElement -> result.append("Failed ").append(failElement.getClass().getSimpleName()).append(" with number ").append(failElement.getNumber()).append("\n"));
         } else {
-            result = "There is no failed node in cluster";
+            throw new NotFoundFailedElements("No failed elements found");
         }
-        return result;
+        return result.toString();
     }
 
-    public static void main(String[] args) {
-        FailSearchEngine failSearchEngine = new FailSearchEngine();
-        Cluster cluster = failSearchEngine.getCluster();
-        //send message
-        cluster.sendMessage();
-        System.out.println(cluster);
-        //use search
-        String result = failSearchEngine.search(cluster);
-        System.out.println(result);
-
-    }
 }
+
+
