@@ -1,5 +1,7 @@
 package model;
 
+import exeptions.NoNodesFoundException;
+
 import java.util.*;
 
 /**
@@ -10,18 +12,18 @@ import java.util.*;
  *
  * @author Edward
  */
-public class Cluster implements Failable {
+public class Cluster implements FallibleWithInners {
 
     private static final int MAX_NUMBER_OF_SERVERS = 15;
-
+    private boolean failed;
     private List<Server> servers;
 
-    public List<Server> getServers() {
+    private List<Server> getServers() {
         return servers;
     }
 
-    public void setServers(List<Server> servers) {
-        this.servers = servers;
+    private void setFailed() {
+        this.failed = true;
     }
 
     public Cluster() {
@@ -32,9 +34,9 @@ public class Cluster implements Failable {
      * generate list of Servers of random size from 1 to MAX_NUMBER_OF_SERVERS
      */
     private void fillListOfServers() {
-        servers = new LinkedList<>();
+        servers = new ArrayList<>();
         Random random = new Random();
-        int numOfNodes = random.nextInt(Cluster.MAX_NUMBER_OF_SERVERS) + 1;
+        int numOfNodes = random.nextInt(Cluster.MAX_NUMBER_OF_SERVERS - 1) + 1;
         for (int i = 0; i < numOfNodes; i++) {
             Server server = new Server(i + 1);
             servers.add(server);
@@ -42,38 +44,49 @@ public class Cluster implements Failable {
     }
 
     /**
-     * set random node's isFail to true in random server and all subsequent nodes
+     * set random node's failed in random server and all subsequent nodes
      */
-    public void sendMessage() {
+    public void sendMessage() throws NoNodesFoundException {
+        setFailed();
         Random random = new Random();
-        Server randomServer = getServers().get(random.nextInt(servers.size()));
+        Server randomServer = getServers().get(random.nextInt(this.getSize()));
         List<Node> randomServerNodes = randomServer.getNodes();
-        Node randomNode = randomServerNodes.get(random.nextInt(randomServerNodes.size()));
-        for (int j = randomServerNodes.indexOf(randomNode); j < randomServerNodes.size(); j++) {
-            randomServerNodes.get(j).setFail(true);
-        }
-        for (int i = getServers().indexOf(randomServer) + 1; i < getServers().size(); i++) {
-            getServers().get(i).getNodes().forEach(node -> node.setFail(true));
-        }
+        if (randomServerNodes.size()>0) {
+            Node randomNode = randomServerNodes.get(random.nextInt(randomServerNodes.size()));
+            randomServer.failNode(randomNode);
+            //all next servers must be failed
+            for (int i = getServers().indexOf(randomServer) + 1; i < this.getSize(); i++) {
+                getServers().get(i).failAllNodes();
+            }
+        } else throw new NoNodesFoundException("random server is empty");
     }
 
-    /**
-     * checks if current server have a fail node
-     *
-     * @param serverNumber in cluster
-     * @param nodeNumber   in server
-     * @return fail status of node
-     */
+
     @Override
-    public boolean isFailed(int serverNumber, int nodeNumber) {
-        Server testServer = getServers().get(serverNumber - 1);
-        if (testServer != null) {
-            Node testNode = testServer.getNodes().get(nodeNumber - 1);
-            if (testNode != null) {
-                return testNode.isFail();
-            }
-        }
-        return false;
+    public String toString() {
+        return "Cluster{" +
+                "servers=" + servers +
+                '}';
+    }
+
+    @Override
+    public boolean isFailed() {
+        return failed;
+    }
+
+    @Override
+    public FallibleWithInners getInnerFallible(int number) {
+        return getServers().get(number);
+    }
+
+    @Override
+    public int getSize() {
+        return getServers().size();
+    }
+
+    @Override
+    public int getNumber() {
+        return 0;
     }
 
     @Override
@@ -81,18 +94,12 @@ public class Cluster implements Failable {
         if (this == o) return true;
         if (!(o instanceof Cluster)) return false;
         Cluster cluster = (Cluster) o;
-        return getServers().equals(cluster.getServers());
+        return isFailed() == cluster.isFailed() &&
+                Objects.equals(getServers(), cluster.getServers());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getServers());
-    }
-
-    @Override
-    public String toString() {
-        return "Cluster{" +
-                "servers=" + servers +
-                '}';
+        return Objects.hash(isFailed(), getServers());
     }
 }

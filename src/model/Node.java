@@ -1,5 +1,6 @@
 package model;
 
+
 import java.util.Objects;
 
 /**
@@ -9,30 +10,49 @@ import java.util.Objects;
  *
  * @author Edward
  */
-public class Node {
+public class Node  implements  FallibleWithInners{
 
-    private int number;
-    private boolean isFail;
+    private final int number;
+    private boolean failed;
 
-    Node(int number, boolean isFail) {
+    Node(int number) {
         this.number = number;
-        this.isFail = isFail;
     }
 
+    @Override
     public int getNumber() {
         return number;
     }
 
-    public void setNumber(int number) {
-        this.number = number;
+    void setFailed() {
+        this.failed = true;
     }
 
-    public boolean isFail() {
-        return isFail;
+    @Override
+    public boolean isFailed() {
+        return failed;
     }
 
-    public void setFail(boolean fail) {
-        isFail = fail;
+    /**
+     * @param number of node
+     * @return null because is on the bottom
+     */
+    @Override
+    public FallibleWithInners getInnerFallible(int number) {
+        return null;
+    }
+
+    @Override
+    public int getSize() {
+        return 0;
+    }
+
+    @Override
+    public String toString() {
+        return "Node{" +
+                "number=" + number +
+                ", failed=" + failed +
+                '}';
     }
 
     @Override
@@ -41,19 +61,11 @@ public class Node {
         if (!(o instanceof Node)) return false;
         Node node = (Node) o;
         return getNumber() == node.getNumber() &&
-                isFail() == node.isFail();
+                isFailed() == node.isFailed();
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getNumber(), isFail());
-    }
-
-    @Override
-    public String toString() {
-        return "Node{" +
-                "number=" + number +
-                ", isFail=" + isFail +
-                '}';
+        return Objects.hash(getNumber(), isFailed());
     }
 }
