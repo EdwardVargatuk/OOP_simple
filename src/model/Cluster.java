@@ -42,7 +42,6 @@ public class Cluster implements FallibleWithInners {
         for (int i = 0; i < numOfNodes; i++) {
             Server server = new Server(i + 1);
             MyOptional<Server> optionalServer = new MyOptional<>(server);
-//            if (optionalServer.isPresent())
             servers.add(optionalServer);
         }
     }

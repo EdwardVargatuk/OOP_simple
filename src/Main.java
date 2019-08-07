@@ -1,4 +1,4 @@
-import app.FailSearchEngine;
+import search_engine.FailSearchEngine;
 import exeptions.NotFoundFailedElements;
 import exeptions.TransactionFailedException;
 import model.Cluster;
@@ -46,37 +46,4 @@ public class Main {
         }
     }
 
-//    public static void main(String[] args) throws InterruptedException {
-//        Cluster cluster = new Cluster();
-//
-//        System.out.println(cluster);
-//        System.out.println("---------------------------------------------");
-//
-//        try {
-//            cluster.doTransaction();
-//
-//            transactionSuccessful(cluster);
-//        } catch (TransactionFailedException e) {
-//            transactionFailed(cluster, e);
-//        }
-//
-//    }
-//
-//    private static void transactionFailed(Cluster cluster, TransactionFailedException e) throws InterruptedException {
-//        System.out.println(cluster);
-//
-//        System.out.println("Detected fail:");
-//        e.printStackTrace();
-//        Thread.sleep(10); // To guarantee stacktrace printing
-//
-//        System.out.println("Searching transaction to confirm fail:");
-//        FailSearchEngine engine = new FailSearchEngine();
-//
-//        System.out.println("\n" + engine.findFail(cluster));
-//    }
-//
-//    private static void transactionSuccessful(Cluster cluster) {
-//        System.out.println(cluster);
-//        System.out.println("Transaction has passed successfully!");
-//    }
 }

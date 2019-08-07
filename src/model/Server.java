@@ -68,7 +68,6 @@ public class Server implements FallibleWithInners {
         for (int i = 0; i < numOfNodes; i++) {
             Node node = new Node(i + 1);
             MyOptional<Node> optionalNode = new MyOptional<>(node);
-//            if (optionalNode.isPresent())
             nodes.add(optionalNode);
         }
     }
@@ -89,11 +88,6 @@ public class Server implements FallibleWithInners {
 
     @Override
     public MyOptional<?> getInnerFallible(int number) {
-//        MyOptional<Node> optionalNode = getNodes().get(number);
-//        if (optionalNode.isPresent()) {
-//            return new MyOptional<>(optionalNode.get());
-//        } else
-//        return MyOptional.empty();
         return  getNodes().get(number).isPresent() ? getNodes().get(number) : MyOptional.empty();
     }
 
