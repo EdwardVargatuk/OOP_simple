@@ -1,7 +1,10 @@
 package model;
 
 
-import java.util.Objects;
+import exeptions.TransactionFailedException;
+import utils.MyOptional;
+
+import java.util.*;
 
 /**
  * node entity
@@ -13,7 +16,7 @@ import java.util.Objects;
 public class Node  implements  FallibleWithInners{
 
     private final int number;
-    private boolean failed;
+    private boolean transactionPassed;
 
     Node(int number) {
         this.number = number;
@@ -24,22 +27,33 @@ public class Node  implements  FallibleWithInners{
         return number;
     }
 
-    void setFailed() {
-        this.failed = true;
+    @Override
+    public void doTransaction() throws TransactionFailedException {
+        Random random = new Random();
+        int randomNumber = random.nextInt(30);
+        if (randomNumber==0){
+            throw new TransactionFailedException("Node № "+ getNumber() + " not passed transaction");
+        }
+        transactionPassed = true;
     }
 
     @Override
-    public boolean isFailed() {
-        return failed;
+    public boolean isTransactionPassed() {
+        return transactionPassed;
     }
 
     /**
      * @param number of node
-     * @return null because is on the bottom
+     * @return MyOptional
      */
     @Override
-    public FallibleWithInners getInnerFallible(int number) {
-        return null;
+    public MyOptional<FallibleWithInners> getInnerFallible(int number) {
+        return MyOptional.empty();
+    }
+
+    @Override
+    public List<MyOptional<? extends FallibleWithInners>> getAllPresentInnerFallible() {
+        return Collections.singletonList(MyOptional.empty());
     }
 
     @Override
@@ -51,7 +65,7 @@ public class Node  implements  FallibleWithInners{
     public String toString() {
         return "Node{" +
                 "number=" + number +
-                ", failed=" + failed +
+                ", transactionPassed=" + transactionPassed +
                 '}';
     }
 
@@ -61,11 +75,11 @@ public class Node  implements  FallibleWithInners{
         if (!(o instanceof Node)) return false;
         Node node = (Node) o;
         return getNumber() == node.getNumber() &&
-                isFailed() == node.isFailed();
+                isTransactionPassed() == node.isTransactionPassed();
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getNumber(), isFailed());
+        return Objects.hash(getNumber(), isTransactionPassed());
     }
 }

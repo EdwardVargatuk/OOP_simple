@@ -2,6 +2,7 @@ package app;
 
 import exeptions.NotFoundFailedElements;
 import model.FallibleWithInners;
+import utils.MyOptional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,16 +22,17 @@ public class FailSearchEngine {
      * @return fallibleWithInners at position if found and null if not
      */
     private FallibleWithInners findFail(FallibleWithInners fallibleWithInners) {
-        if (fallibleWithInners.getSize() == 1 || (fallibleWithInners.getInnerFallible(0).isFailed() && fallibleWithInners.getNumber() != 0)) {
-            return fallibleWithInners.getInnerFallible(0);
+        List<MyOptional<? extends FallibleWithInners>> allInnerFallible = fallibleWithInners.getAllPresentInnerFallible();
+        if (allInnerFallible.size() == 1 || (!allInnerFallible.get(0).get().isTransactionPassed() && fallibleWithInners.getNumber() != 0)) {
+            return allInnerFallible.get(0).get();
         }
         int left = 0;
-        int right = fallibleWithInners.getSize();
+        int right = allInnerFallible.size();
         int position = (left + right) / 2;
-        while (position != 0 && position < fallibleWithInners.getSize()) {
-            if (fallibleWithInners.getInnerFallible(position).isFailed()) {
-                if (!fallibleWithInners.getInnerFallible(position - 1).isFailed()) {
-                    return fallibleWithInners.getInnerFallible(position);
+        while (position != 0 && position < allInnerFallible.size()) {
+            if (!allInnerFallible.get(position).get().isTransactionPassed()) {
+                if (allInnerFallible.get(position - 1).get().isTransactionPassed()) {
+                    return allInnerFallible.get(position).get();
                 } else {
                     right = position ;
                 }
@@ -38,8 +40,8 @@ public class FailSearchEngine {
                 left = position + 1;
             }
             position = (left + right) / 2;
-            if (position == 0 && fallibleWithInners.getInnerFallible(position).isFailed()) {
-                return fallibleWithInners.getInnerFallible(position);
+            if (position == 0 && !allInnerFallible.get(position).get().isTransactionPassed()) {
+                return allInnerFallible.get(position).get();
             }
         }
         return null;
