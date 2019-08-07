@@ -1,6 +1,10 @@
 package model;
 
+import exeptions.TransactionFailedException;
+import utils.MyOptional;
+
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 21.07.2019 10:25
@@ -12,21 +16,38 @@ public class Server implements FallibleWithInners {
     private static final int MAX_NUMBER_OF_NODES = 15;
 
     private final int number;
-    private List<Node> nodes;
-    private boolean failed;
+    private List<MyOptional<Node>> nodes;
 
-    private void setFailed() {
-        this.failed = true;
+    private void setTransactionPassed() {
+        this.transactionPassed = true;
     }
+
+    private boolean transactionPassed;
+
 
     @Override
     public int getNumber() {
         return number;
     }
 
-    List<Node> getNodes() {
+    @Override
+    public void doTransaction() throws TransactionFailedException {
+        getNodes().forEach(node -> {
+            try {
+                if (node.isPresent()) {
+                    node.get().doTransaction();
+                }
+            } catch (TransactionFailedException e) {
+                throw new TransactionFailedException("Server № " + getNumber() + " not passed transaction", e);
+            }
+        });
+        setTransactionPassed();
+    }
+
+    private List<MyOptional<Node>> getNodes() {
         return nodes;
     }
+
     /**
      * create and fill list of nodes
      *
@@ -38,7 +59,7 @@ public class Server implements FallibleWithInners {
     }
 
     /**
-     * generate list of Nodes of random size from 1 to MAX_NUMBER_OF_NODES
+     * generate optional list of Nodes of random size from 1 to MAX_NUMBER_OF_NODES
      */
     private void fillListOfNodes() {
         nodes = new ArrayList<>();
@@ -46,11 +67,13 @@ public class Server implements FallibleWithInners {
         int numOfNodes = random.nextInt(Server.MAX_NUMBER_OF_NODES - 1) + 1;
         for (int i = 0; i < numOfNodes; i++) {
             Node node = new Node(i + 1);
-            nodes.add(node);
+            MyOptional<Node> optionalNode = new MyOptional<>(node);
+            nodes.add(optionalNode);
         }
     }
 
-     @Override
+
+    @Override
     public String toString() {
         return "\n" + "Server{" +
                 "number=" + number +
@@ -59,38 +82,23 @@ public class Server implements FallibleWithInners {
     }
 
     @Override
-    public boolean isFailed() {
-        return failed;
+    public boolean isTransactionPassed() {
+        return transactionPassed;
     }
 
     @Override
-    public FallibleWithInners getInnerFallible(int number) {
-        return getNodes().get(number);
+    public MyOptional<?> getInnerFallible(int number) {
+        return  getNodes().get(number).isPresent() ? getNodes().get(number) : MyOptional.empty();
+    }
+
+    @Override
+    public List<MyOptional<? extends FallibleWithInners>> getAllPresentInnerFallible() {
+        return  getNodes().stream().filter(MyOptional::isPresent).collect(Collectors.toList());
     }
 
     @Override
     public int getSize() {
         return getNodes().size();
-    }
-
-    /**
-     * fail node and all that goes after
-     *
-     * @param randomNode in nodes
-     */
-    void failNode(Node randomNode) {
-        setFailed();
-        for (int j = getNodes().indexOf(randomNode); j < this.getSize(); j++) {
-            getNodes().get(j).setFailed();
-        }
-    }
-
-    /**
-     * fail all nodes in the server
-     */
-    void failAllNodes() {
-        setFailed();
-        getNodes().forEach(Node::setFailed);
     }
 
     @Override
@@ -99,12 +107,12 @@ public class Server implements FallibleWithInners {
         if (!(o instanceof Server)) return false;
         Server server = (Server) o;
         return getNumber() == server.getNumber() &&
-                isFailed() == server.isFailed() &&
+                isTransactionPassed() == server.isTransactionPassed() &&
                 Objects.equals(getNodes(), server.getNodes());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getNumber(), getNodes(), isFailed());
+        return Objects.hash(getNumber(), getNodes(), isTransactionPassed());
     }
 }

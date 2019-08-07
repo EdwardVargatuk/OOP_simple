@@ -1,12 +1,14 @@
 package model;
 
-import exeptions.NoNodesFoundException;
+import exeptions.TransactionFailedException;
+import utils.MyOptional;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Cluster have constructor which autofill list of servers
- * Sends message and set to fail random node and all subsequent nodes
+ * Do Transaction and if it not passed successful set to fail all subsequent nodes
  * <p>
  * 21.07.2019 10:37
  *
@@ -15,15 +17,15 @@ import java.util.*;
 public class Cluster implements FallibleWithInners {
 
     private static final int MAX_NUMBER_OF_SERVERS = 15;
-    private boolean failed;
-    private List<Server> servers;
+    private boolean transactionPassed;
+    private List<MyOptional<Server>> servers;
 
-    private List<Server> getServers() {
+    private List<MyOptional<Server>> getServers() {
         return servers;
     }
 
-    private void setFailed() {
-        this.failed = true;
+    private void setTransactionNotPassed() {
+        this.transactionPassed = true;
     }
 
     public Cluster() {
@@ -31,7 +33,7 @@ public class Cluster implements FallibleWithInners {
     }
 
     /**
-     * generate list of Servers of random size from 1 to MAX_NUMBER_OF_SERVERS
+     * generate optional list of Servers of random size from 1 to MAX_NUMBER_OF_SERVERS
      */
     private void fillListOfServers() {
         servers = new ArrayList<>();
@@ -39,45 +41,26 @@ public class Cluster implements FallibleWithInners {
         int numOfNodes = random.nextInt(Cluster.MAX_NUMBER_OF_SERVERS - 1) + 1;
         for (int i = 0; i < numOfNodes; i++) {
             Server server = new Server(i + 1);
-            servers.add(server);
+            MyOptional<Server> optionalServer = new MyOptional<>(server);
+            servers.add(optionalServer);
         }
     }
 
-    /**
-     * set random node's failed in random server and all subsequent nodes
-     */
-    public void sendMessage() throws NoNodesFoundException {
-        setFailed();
-        Random random = new Random();
-        Server randomServer = getServers().get(random.nextInt(this.getSize()));
-        List<Node> randomServerNodes = randomServer.getNodes();
-        if (randomServerNodes.size()>0) {
-            Node randomNode = randomServerNodes.get(random.nextInt(randomServerNodes.size()));
-            randomServer.failNode(randomNode);
-            //all next servers must be failed
-            for (int i = getServers().indexOf(randomServer) + 1; i < this.getSize(); i++) {
-                getServers().get(i).failAllNodes();
-            }
-        } else throw new NoNodesFoundException("random server is empty");
-    }
-
-
     @Override
-    public String toString() {
-        return "Cluster{" +
-                "servers=" + servers +
-                '}';
+    public boolean isTransactionPassed() {
+        return transactionPassed;
     }
 
     @Override
-    public boolean isFailed() {
-        return failed;
+    public MyOptional<?> getInnerFallible(int number) {
+        return getServers().get(number).isPresent() ? getServers().get(number) : MyOptional.empty();
     }
 
     @Override
-    public FallibleWithInners getInnerFallible(int number) {
-        return getServers().get(number);
+    public List<MyOptional<? extends FallibleWithInners>> getAllPresentInnerFallible() {
+        return  getServers().stream().filter(MyOptional::isPresent).collect(Collectors.toList());
     }
+
 
     @Override
     public int getSize() {
@@ -89,17 +72,40 @@ public class Cluster implements FallibleWithInners {
         return 0;
     }
 
+
+    @Override
+    public void doTransaction() throws TransactionFailedException {
+        getServers().forEach(server -> {
+            try {
+                if (server.isPresent()) {
+                    server.get().doTransaction();
+                }
+            } catch (TransactionFailedException e) {
+                throw new TransactionFailedException("Cluster has failed transaction", e);
+            }
+        });
+        setTransactionNotPassed();
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof Cluster)) return false;
         Cluster cluster = (Cluster) o;
-        return isFailed() == cluster.isFailed() &&
+        return isTransactionPassed() == cluster.isTransactionPassed() &&
                 Objects.equals(getServers(), cluster.getServers());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(isFailed(), getServers());
+        return Objects.hash(isTransactionPassed(), getServers());
     }
+
+    @Override
+    public String toString() {
+        return "Cluster{" +
+                "servers=" + servers +
+                '}';
+    }
+
 }
