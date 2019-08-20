@@ -1,5 +1,6 @@
 package search_engine;
 
+import com.google.gson.JsonObject;
 import exeptions.NotFoundFailedElements;
 import model.FallibleWithInners;
 import utils.MyOptional;
@@ -24,8 +25,11 @@ public class FailSearchEngine {
      */
     private Optional<FallibleWithInners> findFail(FallibleWithInners fallibleWithInners) {
         List<MyOptional<? extends FallibleWithInners>> allInnerFallible = fallibleWithInners.getAllPresentInnerFallible();
-        if (allInnerFallible.size() == 1 || (!allInnerFallible.get(0).get().isTransactionPassed() && fallibleWithInners.getNumber() != 0)) {
-            return Optional.of(allInnerFallible.get(0).get());
+        //if size equals 1 can return not failed element and it checks in getFailedElements
+        if (allInnerFallible.size() > 0) {
+            if (allInnerFallible.size() == 1 || (!allInnerFallible.get(0).get().isTransactionPassed() && fallibleWithInners.getNumber() != 0)) {
+                return Optional.of(allInnerFallible.get(0).get());
+            }
         }
         int left = 0;
         int right = allInnerFallible.size();
@@ -60,8 +64,10 @@ public class FailSearchEngine {
             Optional<FallibleWithInners> fail = findFail(fallibleWithInners);
             if (fail.isPresent()) {
                 fallibleWithInners = fail.get();
-                fallibleWithInnersList.add(fallibleWithInners);
-            }
+                if (!fallibleWithInners.isTransactionPassed()) {
+                    fallibleWithInnersList.add(fallibleWithInners);
+                }
+            } else fallibleWithInners = null;
         }
         return fallibleWithInnersList;
     }
@@ -71,18 +77,18 @@ public class FailSearchEngine {
      * make result according to search data
      *
      * @param fallibleWithInners element that implement {@link FallibleWithInners}
-     * @return result of search in string
+     * @return result of search in json
      * @throws NotFoundFailedElements if result list is empty
      */
-    public String findFailedElements(FallibleWithInners fallibleWithInners) throws NotFoundFailedElements {
+    public JsonObject findFailedElements(FallibleWithInners fallibleWithInners) throws NotFoundFailedElements {
         List<FallibleWithInners> failedElements = getFailedElements(fallibleWithInners);
-        StringBuilder result = new StringBuilder();
+        JsonObject jsonObject = new JsonObject();
         if (failedElements.size() > 0) {
-            failedElements.forEach(failElement -> result.append("Failed ").append(failElement.getClass().getSimpleName()).append(" with number ").append(failElement.getNumber()).append("\n"));
+            failedElements.forEach(failElement -> jsonObject.addProperty("Failed " + failElement.getClass().getSimpleName(), failElement.getNumber()));
         } else {
             throw new NotFoundFailedElements("No failed elements found");
         }
-        return result.toString();
+        return jsonObject;
     }
 
 }

@@ -1,0 +1,86 @@
+{
+  "transactionPassed": true,
+  "servers": [
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {
+      "value": {
+        "number": 7,
+        "nodes": [
+          {},
+          {},
+          {
+            "value": {
+              "number": 3,
+              "transactionPassed": true
+            }
+          },
+          {},
+          {}
+        ],
+        "transactionPassed": true
+      }
+    },
+    {
+      "value": {
+        "number": 8,
+        "nodes": [
+          {
+            "value": {
+              "number": 1,
+              "transactionPassed": true
+            }
+          },
+          {
+            "value": {
+              "number": 2,
+              "transactionPassed": true
+            }
+          },
+          {
+            "value": {
+              "number": 3,
+              "transactionPassed": true
+            }
+          },
+          {},
+          {
+            "value": {
+              "number": 5,
+              "transactionPassed": true
+            }
+          },
+          {},
+          {}
+        ],
+        "transactionPassed": true
+      }
+    },
+    {},
+    {
+      "value": {
+        "number": 10,
+        "nodes": [
+          {
+            "value": {
+              "number": 1,
+              "transactionPassed": true
+            }
+          },
+          {},
+          {
+            "value": {
+              "number": 3,
+              "transactionPassed": true
+            }
+          }
+        ],
+        "transactionPassed": true
+      }
+    }
+  ]
+}

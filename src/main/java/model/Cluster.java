@@ -24,9 +24,6 @@ public class Cluster implements FallibleWithInners {
         return servers;
     }
 
-    private void setTransactionNotPassed() {
-        this.transactionPassed = true;
-    }
 
     public Cluster() {
         fillListOfServers();
@@ -84,7 +81,7 @@ public class Cluster implements FallibleWithInners {
                 throw new TransactionFailedException("Cluster has failed transaction", e);
             }
         });
-        setTransactionNotPassed();
+        this.transactionPassed = true;
     }
 
     @Override

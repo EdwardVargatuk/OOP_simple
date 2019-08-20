@@ -1,0 +1,27 @@
+{
+  "transactionPassed": false,
+  "servers": [
+    {},
+    {
+      "value": {
+        "number": 2,
+        "nodes": [
+          {
+            "value": {
+              "number": 1,
+              "transactionPassed": false
+            }
+          },
+          {
+            "value": {
+              "number": 2,
+              "transactionPassed": false
+            }
+          }
+        ],
+        "transactionPassed": false
+      }
+    },
+    {}
+  ]
+}
