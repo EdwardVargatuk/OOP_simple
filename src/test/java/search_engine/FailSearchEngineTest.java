@@ -4,6 +4,8 @@ import com.google.gson.JsonObject;
 import exeptions.NotFoundFailedElements;
 import exeptions.TransactionFailedException;
 import model.Cluster;
+import model.Node;
+import model.Server;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -30,13 +32,17 @@ class FailSearchEngineTest {
             try {
                 String serverMessage = e.getCause().getMessage();
                 String nodeMessage = e.getCause().getCause().getMessage();
-                int serverNumber = Integer.parseInt((serverMessage.replaceAll("\\D+","")));
-                int nodeNumber = Integer.parseInt((nodeMessage.replaceAll("\\D+","")));
+                int serverNumber = Integer.parseInt((serverMessage.replaceAll("\\D+", "")));
+                int nodeNumber = Integer.parseInt((nodeMessage.replaceAll("\\D+", "")));
                 JsonObject failedElements = failSearchEngine.findFailedElements(cluster);
-                int failedServer = failedElements.get("Failed Server").getAsInt();
-                int failedNode = failedElements.get("Failed Node").getAsInt();
-                assertEquals(serverNumber, failedServer);
-                assertEquals(nodeNumber, failedNode);
+                int failedServerNumber = failedElements.get("Failed Server").getAsInt();
+                int failedNodeNumber = failedElements.get("Failed Node").getAsInt();
+                Server server = (Server) cluster.getInnerFallible(failedServerNumber).get();
+                Node node = (Node) server.getInnerFallible(failedNodeNumber).get();
+                assertFalse(server.isTransactionPassed());
+                assertFalse(node.isTransactionPassed());
+                assertEquals(serverNumber, failedServerNumber);
+                assertEquals(nodeNumber, failedNodeNumber);
             } catch (NotFoundFailedElements notFoundFailedElements) {
                 notFoundFailedElements.printStackTrace();
             }
