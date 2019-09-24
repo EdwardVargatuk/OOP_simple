@@ -78,7 +78,8 @@ public class Cluster implements FallibleWithInners {
                     server.get().doTransaction();
                 }
             } catch (TransactionFailedException e) {
-                throw new TransactionFailedException("Cluster has failed transaction", e);
+                e.printStackTrace();
+//                throw new TransactionFailedException("Cluster has failed transaction", e);
             }
         });
         this.transactionPassed = true;
